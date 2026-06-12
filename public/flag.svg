@@ -1,0 +1,6 @@
+<svg width="60" height="120" viewBox="0 0 60 120" xmlns="http://www.w3.org/2000/svg">
+  <!-- Pole -->
+  <rect x="8" y="0" width="4" height="120" fill="#2E2C2A" />
+  <!-- Pennant -->
+  <path d="M 12 5 L 55 25 L 12 45 Z" fill="#B85C45" />
+</svg>
