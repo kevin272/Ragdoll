@@ -12,7 +12,10 @@ export default function MainMenu() {
   const { devMode } = useSettings();
 
   useEffect(() => {
-    setProgress(loadProgress());
+    const loaded = loadProgress();
+    const map: Record<string, CourseProgress> = {};
+    for (const p of loaded) map[p.courseId] = p;
+    setProgress(map);
   }, []);
 
   return (

@@ -180,7 +180,7 @@ export default function GameCanvas({ courseId }: { courseId: string }) {
   }, []);
 
   // Game state refs (mutated in tick)
-  const gameStateRef = useRef<"aim" | "flight" | "settle" | "results">("aim");
+  const gameStateRef = useRef<"aim" | "flight" | "settle" | "results" | "dead">("aim");
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
   const dragCurrentRef = useRef<{ x: number; y: number } | null>(null);
   const cameraRef = useRef({ x: course.launchPoint.x, y: course.launchPoint.y });
@@ -472,12 +472,16 @@ export default function GameCanvas({ courseId }: { courseId: string }) {
       // Render
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
+      
+      const scale = canvas.width < 768 ? Math.max(0.4, canvas.width / 768) : 1.0;
 
       ctx.fillStyle = activeColors.bgBase;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       ctx.save();
-      ctx.translate(canvas.width / 2 - cameraRef.current.x, canvas.height / 2 - cameraRef.current.y);
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.scale(scale, scale);
+      ctx.translate(-cameraRef.current.x, -cameraRef.current.y);
 
       // Draw grid
       ctx.strokeStyle = activeColors.bgDark;
@@ -501,7 +505,7 @@ export default function GameCanvas({ courseId }: { courseId: string }) {
         if (activeTrail.color === "rainbow") {
           ctx.strokeStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`;
         } else {
-          ctx.strokeStyle = activeTrail.color;
+          ctx.strokeStyle = activeTrail.color || "#ffffff";
         }
         ctx.stroke();
         trailParticlesRef.current = trailParticlesRef.current.filter(p => p.life > 0);
@@ -587,7 +591,11 @@ export default function GameCanvas({ courseId }: { courseId: string }) {
 
       // Update HUD
       if (hudRef.current && gameStateRef.current !== "results") {
-        hudRef.current.innerText = `Distance: ${distanceRef.current} | Flips: ${flipsRef.current} | Bonus: ${bonusRef.current} | Combo: x${comboRef.current}`;
+        if (window.innerWidth < 768) {
+          hudRef.current.innerHTML = `Dist: ${distanceRef.current} | Flips: ${flipsRef.current}<br/>Bonus: ${bonusRef.current} | Combo: x${comboRef.current}`;
+        } else {
+          hudRef.current.innerHTML = `Distance: ${distanceRef.current} | Flips: ${flipsRef.current} | Bonus: ${bonusRef.current} | Combo: x${comboRef.current}`;
+        }
       }
 
       animationFrameId = requestAnimationFrame(tick);
@@ -610,8 +618,10 @@ export default function GameCanvas({ courseId }: { courseId: string }) {
     const handlePointerUp = (e: PointerEvent) => {
       if (gameStateRef.current !== "aim" || !dragStartRef.current || isPausedRef.current) return;
       
-      const dx = dragStartRef.current.x - e.clientX;
-      const dy = dragStartRef.current.y - e.clientY;
+      const scale = window.innerWidth < 768 ? Math.max(0.4, window.innerWidth / 768) : 1.0;
+      
+      const dx = (dragStartRef.current.x - e.clientX) / scale;
+      const dy = (dragStartRef.current.y - e.clientY) / scale;
       
       const maxForce = 0.5;
       const forceScale = 0.002;
@@ -691,9 +701,11 @@ export default function GameCanvas({ courseId }: { courseId: string }) {
       <div  
         ref={hudRef}
         style={{
-          position: "absolute", top: 20, left: 20,
-          color: activeColors.geometry, font: "24px var(--font-geist-mono)",
-          pointerEvents: "none", zIndex: 10
+          position: "absolute", top: 10, left: 10,
+          color: activeColors.geometry, fontFamily: "var(--font-geist-mono)",
+          fontSize: "clamp(14px, 4vw, 24px)",
+          pointerEvents: "none", zIndex: 10,
+          textShadow: "0px 2px 4px rgba(0,0,0,0.3)"
         }}
       ></div>
 
