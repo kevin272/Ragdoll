@@ -5,13 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Matter from "matter-js";
 import { createRagdoll } from "../game/ragdoll";
-import { buildCourse } from "../game/course";
-import { courses } from "../data/courses";
-import { saveProgress } from "../lib/progress";
-import { useSettings } from "../lib/SettingsContext";
+import { CourseData, CourseObject, buildCourse } from "../game/course";
 import { useLoadout } from "../lib/LoadoutContext";
-import { statsManager } from "../lib/stats";
-import { BODIES, IMPACTS, TRAILS, WORLDS } from "../data/cosmetics";
+import { useSettings } from "../lib/SettingsContext";
+import { BODIES, ACCENTS, TRAILS, IMPACTS, getUnlockedCosmetics } from "../data/cosmetics";
+import { saveCourseStars, loadProfile, saveProfile } from "../lib/profile";
 import { loadSkinPattern } from "../lib/patterns";
 
 const COLORS = {
@@ -23,18 +21,19 @@ const COLORS = {
   accent: "#B85C45",
 };
 
-export default function GameCanvas({ courseId }: { courseId: string }) {
-  const router = useRouter();
+export default function GameCanvas({ course, nextCourseId }: { course: CourseData, nextCourseId?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hudRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
   const { sfxVolume } = useSettings();
-  const { worldId, bodyId, trailId, impactId } = useLoadout();
+  const { loadout } = useLoadout();
   
-  const activeWorld = WORLDS.find(w => w.id === worldId) || WORLDS[0];
-  const activeColors = { ...COLORS, ...(activeWorld.colors || {}) };
-  const activeBody = BODIES.find(b => b.id === bodyId) || BODIES[0];
-  const activeTrail = TRAILS.find(t => t.id === trailId) || TRAILS[0];
-  const activeImpact = IMPACTS.find(i => i.id === impactId) || IMPACTS[0];
+  // Base colors without "world" theme
+  const activeColors = { bgBase: "#D7D4CF", bgLight: "#E4E1DC", bgDark: "#C7C3BD", geometry: "#2E2C2A", accent: "#B85C45", ragdoll: "#4A4744" };
+  const activeBody = BODIES.find(b => b.id === loadout.bodySkin) || BODIES[0];
+  const activeAccent = ACCENTS.find(a => a.id === loadout.accent) || ACCENTS[0];
+  const activeTrail = TRAILS.find(t => t.id === loadout.trail) || TRAILS[0];
+  const activeImpact = IMPACTS.find(i => i.id === loadout.impact) || IMPACTS[0];
 
   const sfxRefs = useRef<HTMLAudioElement[]>([]);
   const flagImageRef = useRef<HTMLImageElement | null>(null);
@@ -150,13 +149,11 @@ export default function GameCanvas({ courseId }: { courseId: string }) {
     }
   }, []);
   
-  const course = courses.find(c => c.id === courseId) || courses[0];
-  
-  // React State for Results
   const [showResults, setShowResults] = useState(false);
   const [hasFailed, setHasFailed] = useState(false);
   const [finalScore, setFinalScore] = useState(0);
   const [starsEarned, setStarsEarned] = useState(0);
+  const [unlockToast, setUnlockToast] = useState<string | null>(null);
   
   const [isPaused, setIsPaused] = useState(false);
   const isPausedRef = useRef(false);
@@ -246,7 +243,6 @@ export default function GameCanvas({ courseId }: { courseId: string }) {
               x: (torso.position.x - bumper.position.x) * force,
               y: (torso.position.y - bumper.position.y) * force,
             });
-            statsManager.incrementBumperHit();
           }
         }
         
@@ -335,8 +331,7 @@ export default function GameCanvas({ courseId }: { courseId: string }) {
         }
         
         if (now - lastImpactRef.current < 800) {
-          comboRef.current = Math.min(comboRef.current + 1, 10);
-          statsManager.updateMaxCombo(comboRef.current);
+          comboRef.current = comboRef.current + 1;
         } else {
           comboRef.current = 1;
         }
@@ -347,23 +342,29 @@ export default function GameCanvas({ courseId }: { courseId: string }) {
       if (impactPositions.length > 0 && activeImpact.id !== "impact_none" && engineRef.current) {
         const newParticles: Matter.Body[] = [];
         for (const pos of impactPositions) {
-          for(let i = 0; i < 12; i++) {
-            const p = Matter.Bodies.circle(pos.x, pos.y, 2 + Math.random() * 4, {
-              restitution: 0.5,
-              friction: 0.8,
-              density: 0.00001,
-              label: "particle_impact",
+          let spawned = 0;
+          const numParticles = activeImpact.id === "impact_dust" ? 8 : (activeImpact.id === "impact_starburst" ? 15 : 5);
+          while (spawned < numParticles) {
+            const pSize = activeImpact.id === "impact_dust" ? (Math.random() * 8 + 4) : (Math.random() * 4 + 2);
+            const pBody = Matter.Bodies.circle(pos.x, pos.y, pSize, {
+              restitution: activeImpact.id === "impact_dust" ? 0.1 : 0.8,
+              friction: 0.1,
+              density: 0.001,
               collisionFilter: {
                 category: 0x0004,
                 mask: 0x0001
-              }
+              },
+              label: `particle_impact_${activeImpact.id}`
             });
-            Matter.Body.setVelocity(p, {
-              x: (Math.random() - 0.5) * 20,
-              y: (Math.random() - 0.5) * 10 - 5 // bounce upwards
+            const speed = activeImpact.id === "impact_starburst" ? (Math.random() * 8 + 4) : (Math.random() * 5 + 2);
+            const angle = Math.random() * Math.PI * 2;
+            Matter.Body.setVelocity(pBody, {
+              x: Math.cos(angle) * speed,
+              y: Math.sin(angle) * speed
             });
-            newParticles.push(p);
-            impactParticlesRef.current.push({ body: p, createdAt: Date.now() });
+            newParticles.push(pBody);
+            impactParticlesRef.current.push({ body: pBody, createdAt: Date.now() });
+            spawned++;
           }
         }
         Matter.Composite.add(engineRef.current.world, newParticles);
@@ -504,6 +505,8 @@ export default function GameCanvas({ courseId }: { courseId: string }) {
         ctx.lineCap = "round";
         if (activeTrail.color === "rainbow") {
           ctx.strokeStyle = `hsl(${(Date.now() / 10) % 360}, 100%, 50%)`;
+        } else if (activeTrail.color === "accent") {
+          ctx.strokeStyle = activeAccent.color || "#B85C45";
         } else {
           ctx.strokeStyle = activeTrail.color || "#ffffff";
         }
@@ -536,15 +539,39 @@ export default function GameCanvas({ courseId }: { courseId: string }) {
           ctx.drawImage(flagImageRef.current, 0, -40, 40, 40);
           ctx.translate(-vertices[0].x, -vertices[0].y);
         } else if (body.label.startsWith("particle_impact") || body.label.startsWith("particle_blood")) {
-          ctx.fillStyle = body.label.startsWith("particle_blood") ? "#8B0000" : (activeImpact.color || "#fff");
+          const isBlood = body.label.startsWith("particle_blood");
+          const isDust = body.label === "particle_impact_impact_dust";
+          const isStarburst = body.label === "particle_impact_impact_starburst";
+          
+          let pColor = activeImpact.color || "#4A4744";
+          if (pColor === "accent") pColor = activeAccent.color || "#B85C45";
+          
+          ctx.fillStyle = isBlood ? "#8B0000" : pColor;
           const pData = impactParticlesRef.current.find(p => p.body === body);
           const life = pData ? Math.max(0, 1 - (Date.now() - pData.createdAt) / 1500) : 1;
-          ctx.globalAlpha = life;
+          
+          ctx.globalAlpha = isDust ? life * 0.5 : life;
+          
           ctx.beginPath();
-          ctx.arc(body.position.x, body.position.y, (body.circleRadius || 4) * life, 0, 2 * Math.PI);
+          if (isStarburst) {
+            // Draw a small star
+            const spikes = 4;
+            const outer = (body.circleRadius || 4) * life * 1.5;
+            const inner = outer / 2;
+            let rot = Math.PI / 2 * 3;
+            const step = Math.PI / spikes;
+            ctx.moveTo(body.position.x, body.position.y - outer);
+            for (let i = 0; i < spikes; i++) {
+              ctx.lineTo(body.position.x + Math.cos(rot) * outer, body.position.y + Math.sin(rot) * outer); rot += step;
+              ctx.lineTo(body.position.x + Math.cos(rot) * inner, body.position.y + Math.sin(rot) * inner); rot += step;
+            }
+            ctx.lineTo(body.position.x, body.position.y - outer);
+          } else {
+            ctx.arc(body.position.x, body.position.y, (body.circleRadius || 4) * life, 0, 2 * Math.PI);
+          }
           ctx.fill();
           ctx.globalAlpha = 1.0;
-          continue; // skip the polygon stroke
+          continue;
         } else if (body.label === "spikes" || body.label.startsWith("spikeObstacle_")) {
           if (spikesImageRef.current) {
             const pattern = ctx.createPattern(spikesImageRef.current, "repeat");
@@ -582,9 +609,16 @@ export default function GameCanvas({ courseId }: { courseId: string }) {
         ctx.lineTo(vertices[0].x, vertices[0].y);
         ctx.closePath();
         ctx.fill();
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = activeColors.bgBase;
-        ctx.stroke();
+      }
+
+      // Draw Accent Joints
+      if (ragdollRef.current) {
+        ctx.fillStyle = activeAccent.color || "#B85C45";
+        for (const body of ragdollRef.current.bodies) {
+          ctx.beginPath();
+          ctx.arc(body.position.x, body.position.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
       
       ctx.restore();
@@ -638,7 +672,6 @@ export default function GameCanvas({ courseId }: { courseId: string }) {
       if (torso) {
         Matter.Body.applyForce(torso, torso.position, { x: forceX, y: forceY });
         gameStateRef.current = "flight";
-        statsManager.incrementCrash(); // Launch counts as a new run/crash
         
         // Play launch scream!
         if (sfxRefs.current.length > 0) {
@@ -660,11 +693,11 @@ export default function GameCanvas({ courseId }: { courseId: string }) {
 
     // Trigger Results Helper
     const triggerResults = (failed: boolean) => {
+      if (!course) return;
       gameStateRef.current = "results";
       setHasFailed(failed);
       
-      // Calculate final score
-      const totalScore = failed ? 0 : distanceRef.current + (flipsRef.current * 1000) + bonusRef.current;
+      const totalScore = distanceRef.current + bonusRef.current;
       setFinalScore(totalScore);
       
       let stars = 0;
@@ -677,24 +710,39 @@ export default function GameCanvas({ courseId }: { courseId: string }) {
       setShowResults(true);
 
       if (!failed && stars > 0) {
-        saveProgress(courseId, totalScore, stars);
+        const oldUnlockedCount = loadProfile().unlockedCosmetics.length;
+        saveCourseStars(course.id, stars);
+        const newTotal = loadProfile().totalStars;
+        
+        const newUnlocked = getUnlockedCosmetics(newTotal);
+        if (newUnlocked.length > oldUnlockedCount) {
+          const profile = loadProfile();
+          profile.unlockedCosmetics = newUnlocked;
+          saveProfile(profile);
+          
+          // Find the newly unlocked item name
+          const allItems = [...BODIES, ...ACCENTS, ...TRAILS, ...IMPACTS];
+          const newestId = newUnlocked[newUnlocked.length - 1];
+          const newestItem = allItems.find(i => i.id === newestId);
+          if (newestItem) {
+            setUnlockToast(`New unlock: ${newestItem.name}!`);
+          }
+        }
       }
     };
 
     return () => {
       canvas.removeEventListener("pointerdown", handlePointerDown);
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
+      canvas.removeEventListener("pointermove", handlePointerMove);
+      canvas.removeEventListener("pointerup", handlePointerUp);
       cancelAnimationFrame(animationFrameId);
       Matter.Engine.clear(engine);
     };
-  }, [course, courseId]);
+  }, [course]);
 
   const resetGame = () => {
     window.location.reload();
   };
-
-  const nextCourseId = courses[courses.findIndex(c => c.id === courseId) + 1]?.id;
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
@@ -781,6 +829,17 @@ export default function GameCanvas({ courseId }: { courseId: string }) {
               )}
             </div>
           </div>
+        </div>
+      )}
+
+      {unlockToast && (
+        <div style={{
+          position: "absolute", top: 80, left: "50%", transform: "translateX(-50%)",
+          background: "var(--color-accent)", color: "#fff", padding: "15px 30px",
+          borderRadius: "8px", zIndex: 100, fontFamily: "var(--font-display)", fontSize: "1.5rem",
+          boxShadow: "0 4px 12px rgba(0,0,0,0.3)", animation: "slideDown 0.5s ease-out"
+        }}>
+          {unlockToast}
         </div>
       )}
     </div>

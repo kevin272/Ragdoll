@@ -1,0 +1,145 @@
+{
+  "id": "course_10",
+  "name": "The Big One",
+  "launchPoint": {
+    "x": 200,
+    "y": 300
+  },
+  "cameraBounds": {
+    "minX": 0,
+    "maxX": 6000
+  },
+  "objects": [
+    {
+      "id": "p1",
+      "type": "platform",
+      "x": 0,
+      "y": 400,
+      "w": 400,
+      "h": 50
+    },
+    {
+      "id": "p2",
+      "type": "platform",
+      "x": 400,
+      "y": 500,
+      "w": 100,
+      "h": 50
+    },
+    {
+      "id": "p3",
+      "type": "platform",
+      "x": 500,
+      "y": 600,
+      "w": 100,
+      "h": 50
+    },
+    {
+      "id": "p4",
+      "type": "platform",
+      "x": 600,
+      "y": 600,
+      "w": 400,
+      "h": 50,
+      "angle": 0.2
+    },
+    {
+      "id": "spin1",
+      "type": "spinner",
+      "x": 1500,
+      "y": 800,
+      "w": 300,
+      "h": 20,
+      "angularSpeed": 0.06
+    },
+    {
+      "id": "spin2",
+      "type": "spinner",
+      "x": 2000,
+      "y": 900,
+      "w": 300,
+      "h": 20,
+      "angularSpeed": -0.06
+    },
+    {
+      "id": "bump1",
+      "type": "bumper",
+      "x": 2600,
+      "y": 1000,
+      "radius": 50,
+      "restitution": 1.8
+    },
+    {
+      "id": "bump2",
+      "type": "bumper",
+      "x": 2900,
+      "y": 900,
+      "radius": 50,
+      "restitution": 1.8
+    },
+    {
+      "id": "bump3",
+      "type": "bumper",
+      "x": 3200,
+      "y": 1100,
+      "radius": 50,
+      "restitution": 1.8
+    },
+    {
+      "id": "m1",
+      "type": "movingPlatform",
+      "x": 3800,
+      "y": 1200,
+      "w": 200,
+      "h": 50,
+      "endX": 4300,
+      "endY": 1200,
+      "moveSpeed": 4
+    },
+    {
+      "id": "p5",
+      "type": "platform",
+      "x": 4800,
+      "y": 1300,
+      "w": 800,
+      "h": 50
+    },
+    {
+      "id": "b1",
+      "type": "bonusTarget",
+      "x": 1500,
+      "y": 650,
+      "radius": 25,
+      "points": 1000
+    },
+    {
+      "id": "b2",
+      "type": "bonusTarget",
+      "x": 2900,
+      "y": 750,
+      "radius": 25,
+      "points": 1000
+    },
+    {
+      "id": "b3",
+      "type": "bonusTarget",
+      "x": 4050,
+      "y": 1100,
+      "radius": 25,
+      "points": 2000
+    },
+    {
+      "id": "f1",
+      "type": "finishFlag",
+      "x": 5400,
+      "y": 1240,
+      "w": 60,
+      "h": 120
+    }
+  ],
+  "starThresholds": {
+    "oneStar": 5000,
+    "twoStar": 8000,
+    "threeStar": 12000
+  }
+}

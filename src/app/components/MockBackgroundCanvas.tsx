@@ -3,8 +3,7 @@
 import { useEffect, useRef } from "react";
 import Matter from "matter-js";
 import { createRagdoll } from "../game/ragdoll";
-import { buildCourse } from "../game/course";
-import { courses } from "../data/courses";
+import { CourseData, buildCourse } from "../game/course";
 
 const COLORS = {
   bgBase: "#D7D4CF",
@@ -13,6 +12,20 @@ const COLORS = {
   geometry: "#2E2C2A",
   ragdoll: "#4A4744",
   accent: "#B85C45",
+};
+
+const dummyCourse: CourseData = {
+  id: "dummy",
+  name: "Dummy",
+  launchPoint: { x: 200, y: 300 },
+  cameraBounds: { minX: 0, maxX: 2000 },
+  starThresholds: { oneStar: 0, twoStar: 0, threeStar: 0 },
+  objects: [
+    { id: "floor1", type: "platform", x: 1000, y: 800, w: 2000, h: 100 },
+    { id: "b1", type: "bumper", x: 600, y: 600, radius: 40, points: 100 },
+    { id: "b2", type: "bumper", x: 1000, y: 500, radius: 40, points: 100 },
+    { id: "b3", type: "bumper", x: 1400, y: 600, radius: 40, points: 100 }
+  ]
 };
 
 export default function MockBackgroundCanvas() {
@@ -27,8 +40,7 @@ export default function MockBackgroundCanvas() {
     const engine = Matter.Engine.create();
     engine.gravity.y = 1.5;
 
-    // Use Level 4 or some chaotic level for the background
-    const course = courses[3] || courses[0];
+    const course = dummyCourse;
     const courseComposite = buildCourse(course);
     
     let ragdoll = createRagdoll({ x: course.launchPoint.x, y: course.launchPoint.y - 100 });

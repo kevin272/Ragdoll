@@ -1,0 +1,83 @@
+{
+  "id": "course_5",
+  "name": "Bumper Garden",
+  "launchPoint": {
+    "x": 200,
+    "y": 300
+  },
+  "cameraBounds": {
+    "minX": 0,
+    "maxX": 4500
+  },
+  "objects": [
+    {
+      "id": "p1",
+      "type": "platform",
+      "x": 0,
+      "y": 400,
+      "w": 500,
+      "h": 50
+    },
+    {
+      "id": "bump1",
+      "type": "bumper",
+      "x": 800,
+      "y": 500,
+      "radius": 40,
+      "restitution": 1.5
+    },
+    {
+      "id": "bump2",
+      "type": "bumper",
+      "x": 1200,
+      "y": 600,
+      "radius": 50,
+      "restitution": 1.8
+    },
+    {
+      "id": "bump3",
+      "type": "bumper",
+      "x": 1000,
+      "y": 800,
+      "radius": 40,
+      "restitution": 1.5
+    },
+    {
+      "id": "bump4",
+      "type": "bumper",
+      "x": 1600,
+      "y": 400,
+      "radius": 60,
+      "restitution": 2
+    },
+    {
+      "id": "p2",
+      "type": "platform",
+      "x": 2000,
+      "y": 900,
+      "w": 1000,
+      "h": 50
+    },
+    {
+      "id": "b1",
+      "type": "bonusTarget",
+      "x": 1400,
+      "y": 500,
+      "radius": 20,
+      "points": 500
+    },
+    {
+      "id": "f1",
+      "type": "finishFlag",
+      "x": 2800,
+      "y": 840,
+      "w": 60,
+      "h": 120
+    }
+  ],
+  "starThresholds": {
+    "oneStar": 1500,
+    "twoStar": 3000,
+    "threeStar": 4500
+  }
+}

@@ -1,61 +1,48 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { loadProfile, saveProfile, TumbledownProfile } from "./profile";
 
-interface Loadout {
-  bodyId: string;
-  impactId: string;
-  trailId: string;
-  worldId: string;
-  setLoadout: (key: "bodyId" | "impactId" | "trailId" | "worldId", val: string) => void;
+interface LoadoutContextType {
+  loadout: TumbledownProfile["loadout"];
+  setLoadout: (key: keyof TumbledownProfile["loadout"], val: string) => void;
+  unlockedCosmetics: string[];
 }
 
-const defaultLoadout: Loadout = {
-  bodyId: "body_default",
-  impactId: "impact_dust",
-  trailId: "trail_none",
-  worldId: "world_sketchbook",
+const defaultLoadoutContext: LoadoutContextType = {
+  loadout: {
+    bodySkin: "skin_charcoal",
+    accent: "accent_rust",
+    trail: "trail_none",
+    impact: "impact_debris"
+  },
   setLoadout: () => {},
+  unlockedCosmetics: ["skin_charcoal", "accent_rust", "trail_none", "impact_debris"]
 };
 
-const LoadoutContext = createContext<Loadout>(defaultLoadout);
+const LoadoutContext = createContext<LoadoutContextType>(defaultLoadoutContext);
 
 export function LoadoutProvider({ children }: { children: React.ReactNode }) {
-  const [loadout, setLoadoutState] = useState<Omit<Loadout, "setLoadout">>({
-    bodyId: defaultLoadout.bodyId,
-    impactId: defaultLoadout.impactId,
-    trailId: defaultLoadout.trailId,
-    worldId: defaultLoadout.worldId,
-  });
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [profile, setProfileState] = useState<TumbledownProfile | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("tumbledown_loadout");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setLoadoutState({
-          bodyId: parsed.bodyId || defaultLoadout.bodyId,
-          impactId: parsed.impactId || defaultLoadout.impactId,
-          trailId: parsed.trailId || defaultLoadout.trailId,
-          worldId: parsed.worldId || defaultLoadout.worldId,
-        });
-      } catch (e) {}
-    }
-    setIsLoaded(true);
+    setProfileState(loadProfile());
   }, []);
 
-  const setLoadout = (key: keyof Omit<Loadout, "setLoadout">, val: string) => {
-    setLoadoutState(prev => {
-      const next = { ...prev, [key]: val };
-      localStorage.setItem("tumbledown_loadout", JSON.stringify(next));
+  const setLoadout = (key: keyof TumbledownProfile["loadout"], val: string) => {
+    setProfileState(prev => {
+      if (!prev) return prev;
+      const next = { ...prev, loadout: { ...prev.loadout, [key]: val } };
+      saveProfile(next);
       return next;
     });
   };
 
+  if (!profile) return null;
+
   return (
-    <LoadoutContext.Provider value={{ ...loadout, setLoadout }}>
-      {isLoaded && children}
+    <LoadoutContext.Provider value={{ loadout: profile.loadout, setLoadout, unlockedCosmetics: profile.unlockedCosmetics }}>
+      {children}
     </LoadoutContext.Provider>
   );
 }

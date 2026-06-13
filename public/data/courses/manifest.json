@@ -1,0 +1,64 @@
+{
+  "courses": [
+    {
+      "id": "course_1",
+      "name": "First Steps",
+      "tier": "core",
+      "file": "level_01_first_steps.json"
+    },
+    {
+      "id": "course_2",
+      "name": "Broken Knees",
+      "tier": "core",
+      "file": "level_02_broken_knees.json"
+    },
+    {
+      "id": "course_3",
+      "name": "Momentum",
+      "tier": "core",
+      "file": "level_03_momentum.json"
+    },
+    {
+      "id": "course_4",
+      "name": "The Canyon",
+      "tier": "core",
+      "file": "level_04_the_canyon.json"
+    },
+    {
+      "id": "course_5",
+      "name": "Bumper Garden",
+      "tier": "core",
+      "file": "level_05_bumper_garden.json"
+    },
+    {
+      "id": "course_6",
+      "name": "Spin Cycle",
+      "tier": "core",
+      "file": "level_06_spin_cycle.json"
+    },
+    {
+      "id": "course_7",
+      "name": "Crash Factory",
+      "tier": "core",
+      "file": "level_07_crash_factory.json"
+    },
+    {
+      "id": "course_8",
+      "name": "The Gauntlet",
+      "tier": "core",
+      "file": "level_08_the_gauntlet.json"
+    },
+    {
+      "id": "course_9",
+      "name": "Remix",
+      "tier": "expert",
+      "file": "level_09_remix.json"
+    },
+    {
+      "id": "course_10",
+      "name": "The Big One",
+      "tier": "expert",
+      "file": "level_10_the_big_one.json"
+    }
+  ]
+}
